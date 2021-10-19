@@ -1,55 +1,55 @@
 import pandas as pd
 import numpy as np
-
-pd.set_option('display.max_rows', 2000)
-pd.set_option('display.max_columns', 1000)
-pd.set_option('display.width', 2000)
-pd.set_option("display.precision", 2)
+from pandas import DataFrame
 
 volume = 'Объем двигателя'
-numberSeats = 'Кол-во сидений'
-upToOneHundred = 'ускорение 0/100'
-fuelConsumption = 'Расход топлива'
+number_seats = 'Кол-во сидений'
+up_to_one_hundred = 'ускорение 0/100'
+fuel_consumption = 'Расход топлива'
 
-table = pd.read_csv('data.csv')
+input_table = pd.read_csv('data.csv')
 
-max_volume = 7.0
-default_volume = 12.0
-default_upToOneHundred = 10.0
-max_upToOneHundred = 2.0
-max_numberSeats = 8
-default_numberSeats = 4
-default_fuelConsumption = 15.0
-max_fuelConsumption = 25.0
+volume_t = input_table[volume].to_list()
+number_seats_t = input_table[number_seats].to_list()
+up_to_one_hundred_t = input_table[up_to_one_hundred].to_list()
+fuel_consumption_t = input_table[fuel_consumption].to_list()
 
-volume_t = table[volume]
-numberSeats_t = table[numberSeats]
-upToOneHundred_t = table[upToOneHundred]
-fuelConsumption_t = table[fuelConsumption]
 
-volume_t.update(volume_t.replace(np.nan, default_volume))
-table.loc[(table[volume] > max_volume), volume] = max_volume
+def normalized_array(input_array):
+    output_array = input_array.copy()
+    output_array = [element for element in output_array if not np.isnan(element) ]
+    output_array.sort()
+    lower_quartile_value = np.quantile(output_array, 0.25)
+    upper_quartile_value = np.quantile(output_array, 0.75)
+    interquartile_range = lower_quartile_value - upper_quartile_value
+    lower_inner_fence = lower_quartile_value + 0.45 * interquartile_range
+    upper_inner_fence = upper_quartile_value - 0.5 * interquartile_range
+    median_value = np.median(output_array)
+    return list(map(lambda x: x if lower_inner_fence <= x <= upper_inner_fence else median_value,
+                    input_array))
 
-numberSeats_t.update(numberSeats_t.replace(0, default_numberSeats))
-table.loc[(table[numberSeats] > max_numberSeats), numberSeats] = max_numberSeats
 
-upToOneHundred_t.update(upToOneHundred_t.replace(np.nan, default_upToOneHundred))
-table.loc[(table[upToOneHundred] < max_upToOneHundred), upToOneHundred] = max_upToOneHundred
+volume_t = normalized_array(volume_t)
+number_seats_t = normalized_array(number_seats_t)
+up_to_one_hundred_t = normalized_array(up_to_one_hundred_t)
+fuel_consumption_t = normalized_array(fuel_consumption_t)
 
-fuelConsumption_t.update(fuelConsumption_t.replace(np.nan, default_fuelConsumption))
-table.loc[(table[fuelConsumption] > max_fuelConsumption), fuelConsumption] = max_fuelConsumption
+output_table = DataFrame({"volume": volume_t, "number_seats": number_seats_t, "up_to_one_hundred": up_to_one_hundred_t,
+                          "fuel_consumption": fuel_consumption_t})
 
-meanVolume = table['Объем двигателя'].mean()
-medianNumberSeats = table['Кол-во сидений'].median()
-minFuelConsumption = table['Расход топлива'].min()
+mean_volume = output_table['volume'].mean()
+median_number_seats = output_table['number_seats'].median()
+min_fuel_consumption = output_table['fuel_consumption'].min()
+
+print(output_table)
 
 print('Средний объем двигателя:')
-print(meanVolume)
+print(mean_volume)
 
 print('Медиана по кол-ву сидений:')
-print(medianNumberSeats)
+print(median_number_seats)
 
 print('Минимальный расход топлива:')
-print(minFuelConsumption)
+print(min_fuel_consumption)
 
-table.to_csv('dataNormal.csv', index=False)
+output_table.to_csv('dataNormal.csv', index=False)
